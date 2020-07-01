@@ -13,6 +13,4 @@ All errors handlings are made in mongoose Schema.
 If you want to use a cloud MongoDB please change the /config/config.js:
 from -> const env = process.env.NODE_ENV || 'local' 
 to -> const env = process.env.NODE_ENV || 'cloud';
-In this case the adress and port will be http://localhost:3000, you should set also the DB_USER = 'vasko', and DB_PASS = 'vas2014eli';
 
-The sorting - bonus part is also done.

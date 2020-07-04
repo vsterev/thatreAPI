@@ -3,20 +3,11 @@ const { createToken } = require('../utils/jwt');
 
 function signin(req, res) {
     const token = createToken({ userID: req.user.id });
-    // res.headers('aid', token)
-    // res.cookie('auth-cookie', token)
-    // .redirect('/');
     res.send({ message: 'User successufuly loged in', token, userId: req.user.id })
 }
 
 module.exports = {
     get: {
-        login: (req, res) => {
-            res.render('login.hbs')
-        },
-        register: (req, res) => {
-            res.render('register')
-        },
         logout: (req, res, next) => {
             const token = req.token || req.cookies['auth-cookie'];
             if (!token) {
@@ -60,27 +51,25 @@ module.exports = {
         },
         register: (req, res, next) => {
             const { username, password, repeatPassword } = req.body;
-            if (password !== repeatPassword) {
-                res.render('register.hbs', { errors: { password: 'Password and repeatpassword don\'t match' } })
-                return;
-            }
+            // if (password !== repeatPassword) {
+            //     res.render('register.hbs', { errors: { password: 'Password and repeatpassword don\'t match' } })
+            //     return;
+            // }
             userModel.create({ username, password })
-                .then((user) => {
-                    req.user = user;
-                    signin(req, res);
-                    return;
+                .then(() => {
+                    res.send({message: `User ${username} is created`})
                 })
                 .catch(err => {
                     if (err.code = 11000 && err.name === 'MongoError') {
-                        res.render('register', { errors: { username: 'User already exist' } })
+                        res.send({ errors: { username: 'User already exist' } })
                         return;
                     }
                     if (err.name === 'ValidationError') {
-                        res.render('register.hbs', { errors: err.errors });
+                        res.send( { errors: err.errors });
                         console.log(err)
                         return;
                     }
-                    next(err);
+                    console.log(err);
                 })
         }
     }

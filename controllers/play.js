@@ -35,31 +35,44 @@ module.exports = {
                     play.isLiked = play.users.includes(user.id.toString());
                     res.send({ play, user })
                 })
-                .catch(err => res.send({ err }))
+                .catch(err => res.send({ error: err.message }))
         },
         notFound: (req, res, next) => {
             const user = req.user;
-            res.render('404.hbs', { title: 'course | Not found page', user })
+            res.status(404).send({ message: `Not Found custom message ` })
         },
         sortByLikes: (req, res, next) => {
             const user = req.user;
-            playModel.find({ isPublic: true })
-                .then(plays => {
-                    let sorted = [...plays].sort((a, b) => { return b.users.length - a.users.length })
-                    res.send({ sorted })
-                })
-                .catch(err => send(err))
+            playModel.aggregate([
+                {
+                    $project: {
+                        numberOfLikes: { $cond: { if: { $isArray: "$users" }, then: { $size: "$users" }, else: "NA" } }
+                    },
+                }
+            ])
+                .then(plays => console.log(plays))
+                .catch(err => console.error(err))
+            // playModel.find().sort({ 'usersLength': 1 })
+            //     .then(plays => {
+            //         // let sorted = [...plays].sort((a, b) => { return b.users.length - a.users.length })
+            //         res.send({ plays })
+            //     })
+            //     .catch(err => {
+            //         res.send({ error: err.message })
+            //         console.log(err)
+            //     })
         },
         sortByDate: (req, res, next) => {
             const user = req.user;
-            playModel.find({ isPublic: true })
+            const { from, to } = req.query
+            playModel.find({ isPublic: true }).sort({ createdAt: -1 }).skip(+from).limit(+to) //paging
                 .then(plays => {
-                    const sorted = [...plays].sort((a, b) => {
-                        return b.createdAt - a.createdAt
-                    })
-                    res.send({ sorted })
+                    // const sorted = [...plays].sort((a, b) => {
+                    //     return b.createdAt - a.createdAt
+                    // })
+                    res.send({ plays })
                 })
-                .catch(err => send(err))
+                .catch(err => send({ error: err.message }))
 
         },
         myPlays: (req, res, next) => {
@@ -68,7 +81,7 @@ module.exports = {
                 .then(plays =>
                     res.send({ message: "My plays", plays })
                 )
-                .catch(err => console.log(err))
+                .catch(err => console.log({ error: err.message }))
         }
     },
     post: {
@@ -105,7 +118,7 @@ module.exports = {
                 .then(([userUpdated, modelDeleted]) => {
                     res.send({ message: `Play ${modelDeleted.id} is deleted !` });
                 })
-                .catch(err => res.status(400).send(err))
+                .catch(err => res.status(400).send(err.message))
         }
     },
     patch: {
@@ -122,7 +135,7 @@ module.exports = {
                 playModel.findByIdAndUpdate(playId, { $push: { users: user.id }, $inc: { likesCount: +1 } }).lean()
             ])
                 .then(([user, play]) => res.send({ message: `Play ${playId} is liked !` }))
-                .catch(err => res.status(400).send(err))
+                .catch(err => res.status(400).send({ error: err.message }))
         },
         edit: (req, res, next) => {
             const user = req.user;
@@ -136,10 +149,10 @@ module.exports = {
                 .then(play => res.send({ message: `Play ${play.id} is updated`, play }))
                 .catch(err => {
                     if (err.name == 'ValidationError') {
-                        res.send({ massage: 'ValidationError', error: err })
+                        res.send({ massage: 'ValidationError', error: err.message })
                         return;
                     }
-                    res.send({ error: err });
+                    res.send({ error: err.message });
                     console.log(err)
                 })
         }
